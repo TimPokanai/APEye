@@ -130,3 +130,16 @@ class SecretScanner:
         
         return matches
     
+    def _mask_secret(self, secret: str) -> str:
+        """
+        Mask a secret for safe display, showing only first and last few characters.
+        
+        Args:
+            secret: The secret string to mask
+            
+        Returns:
+            Masked version of the secret
+        """
+        if len(secret) <= 8:
+            return '*' * len(secret)
+        return f"{secret[:4]}...{secret[-4:]}"
