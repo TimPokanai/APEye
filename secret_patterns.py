@@ -151,3 +151,61 @@ class SecretScanner:
             "medium": "🟠",
             "low": "🟡"
         }.get(severity, "⚪")
+
+def format_findings_report(matches: List[SecretMatch]) -> str:
+    """
+    Format detected secrets into a readable report.
+    
+    Args:
+        matches: List of SecretMatch objects
+        
+    Returns:
+        Formatted report string
+    """
+    if not matches:
+        return "No secrets detected."
+    
+    scanner = SecretScanner()
+    
+    # Group by severity
+    high = [m for m in matches if m.severity == "high"]
+    medium = [m for m in matches if m.severity == "medium"]
+    low = [m for m in matches if m.severity == "low"]
+    
+    report_lines = [
+        "## 🔐 Secret Scanner Report",
+        "",
+        f"**Total findings: {len(matches)}** (🔴 High: {len(high)}, 🟠 Medium: {len(medium)}, 🟡 Low: {len(low)})",
+        "",
+        "---",
+        ""
+    ]
+    
+    for severity_name, severity_matches in [("High", high), ("Medium", medium), ("Low", low)]:
+        if severity_matches:
+            severity_icon = scanner.get_severity_icon(severity_name.lower())
+            report_lines.append(f"### {severity_icon} {severity_name} Severity")
+            report_lines.append("")
+            
+            for match in severity_matches:
+                report_lines.append(f"- **{match.secret_type}**")
+                report_lines.append(f"  - File: `{match.file_path}`")
+                report_lines.append(f"  - Line: {match.line_number}")
+                report_lines.append(f"  - Value: `{match.matched_value}`")
+                report_lines.append("")
+    
+    report_lines.extend([
+        "---",
+        "",
+        "⚠️ **Action Required**: Please remove or rotate the detected secrets immediately.",
+        "",
+        "**Recommended steps:**",
+        "1. Remove the sensitive data from your code",
+        "2. Use environment variables or a secrets manager",
+        "3. Rotate any exposed credentials",
+        "4. Check your git history and consider rewriting it if needed",
+        "",
+        "*This scan was performed automatically by the APEye Bot.*"
+    ])
+    
+    return '\n'.join(report_lines)
