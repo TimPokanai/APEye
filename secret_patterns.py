@@ -82,3 +82,51 @@ class SecretScanner:
                     ))
         
         return matches
+    
+    def scan_diff(self, diff_content: str, file_path: str = "unknown") -> List[SecretMatch]:
+        """
+        Scan a Git diff for secrets (only in added lines).
+        
+        Args:
+            diff_content: The diff content to scan
+            file_path: The file path for reporting purposes
+            
+        Returns:
+            List of SecretMatch objects for detected secrets
+        """
+        matches = []
+        lines = diff_content.split('\n')
+        current_line_num = 0
+        
+        for line in lines:
+            # Track line numbers from diff headers
+            if line.startswith('@@'):
+                # Parse the line number from diff header: @@ -start,count +start,count @@
+                match = re.search(r'\+(\d+)', line)
+                if match:
+                    current_line_num = int(match.group(1)) - 1
+                continue
+            
+            # Only scan added lines (lines starting with +, but not +++)
+            if line.startswith('+') and not line.startswith('+++'):
+                current_line_num += 1
+                content = line[1:]  # Remove the + prefix
+                
+                for pattern in self.compiled_patterns:
+                    found = pattern["regex"].search(content)
+                    if found:
+                        matched_value = found.group(1) if found.lastindex else found.group(0)
+                        masked_value = self._mask_secret(matched_value)
+                        
+                        matches.append(SecretMatch(
+                            secret_type=pattern["name"],
+                            matched_value=masked_value,
+                            line_number=current_line_num,
+                            file_path=file_path,
+                            severity=pattern["severity"]
+                        ))
+            elif not line.startswith('-'):
+                current_line_num += 1
+        
+        return matches
+    
