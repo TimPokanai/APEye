@@ -55,4 +55,30 @@ class SecretScanner:
         Returns:
             List of SecretMatch objects for detected secrets
         """
-    
+        matches = []
+        lines = text.split('\n')
+
+        for line_num, line in enumerate(lines, start=1):
+            # Skip empty lines and comments
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#') or stripped.startswith('//'):
+                continue
+            
+            for pattern in self.compiled_patterns:
+                found = pattern["regex"].search(line)
+                if found:
+                    # Get the matched value, using group 1 if available (for capture groups)
+                    matched_value = found.group(1) if found.lastindex else found.group(0)
+                    
+                    # Mask the secret for safe display
+                    masked_value = self._mask_secret(matched_value)
+                    
+                    matches.append(SecretMatch(
+                        secret_type=pattern["name"],
+                        matched_value=masked_value,
+                        line_number=line_num,
+                        file_path=file_path,
+                        severity=pattern["severity"]
+                    ))
+        
+        return matches
