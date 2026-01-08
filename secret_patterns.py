@@ -143,3 +143,11 @@ class SecretScanner:
         if len(secret) <= 8:
             return '*' * len(secret)
         return f"{secret[:4]}...{secret[-4:]}"
+    
+    def get_severity_icon(self, severity: str) -> str:
+        """Get an icon for the severity level."""
+        return {
+            "high": "🔴",
+            "medium": "🟠",
+            "low": "🟡"
+        }.get(severity, "⚪")
