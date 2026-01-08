@@ -1,0 +1,6 @@
+PyGithub==2.1.1 # GitHub API wrapper
+requests==2.31.0
+python-dotenv==1.0.0
+regex==2023.12.25
+colorama==0.4.6 # Colored terminal output
+schedule==1.2.1 # Job scheduling
