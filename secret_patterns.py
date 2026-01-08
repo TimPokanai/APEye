@@ -1,0 +1,58 @@
+"""
+Secret Detection Patterns Module
+Contains regex patterns for detecting various types of sensitive information.
+"""
+
+import re
+from dataclasses import dataclass
+from typing import List, Tuple, Optional
+
+@dataclass
+class SecretMatch:
+    """Represents a detected secret in code."""
+    secret_type: str
+    matched_value: str
+    line_number: int
+    file_path: str
+    severity: str  # 'high', 'medium', 'low'
+
+SECRET_PATTERNS = [
+
+]
+
+class SecretScanner:
+    """Scans text content for potential secrets and sensitive information."""
+    
+    def __init__(self, custom_patterns: Optional[List[dict]] = None):
+        """
+        Initialize the scanner with default and optional custom patterns.
+        
+        Args:
+            custom_patterns: Additional patterns to include in scanning
+        """
+        self.patterns = SECRET_PATTERNS.copy()
+        if custom_patterns:
+            self.patterns.extend(custom_patterns)
+        
+        # Compile patterns for efficiency
+        self.compiled_patterns = [
+            {
+                "name": p["name"],
+                "regex": re.compile(p["pattern"]),
+                "severity": p["severity"]
+            }
+            for p in self.patterns
+        ]
+    
+    def scan_text(self, text: str, file_path: str = "unknown") -> List[SecretMatch]:
+        """
+        Scan text content for secrets.
+        
+        Args:
+            text: The text content to scan
+            file_path: The file path for reporting purposes
+            
+        Returns:
+            List of SecretMatch objects for detected secrets
+        """
+    
