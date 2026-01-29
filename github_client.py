@@ -91,4 +91,66 @@ class GitHubClient:
             for repo in user.get_repos():
                 yield repo
     
+    def search_public_repos_with_recent_activity(self, 
+                                                  since_minutes: int = 30,
+                                                  language: Optional[str] = None,
+                                                  min_stars: int = 0,
+                                                  max_results: int = 100) -> Generator[Repository, None, None]:
+        """
+        Search for public repositories with recent push activity.
+        
+        Args:
+            since_minutes: Look for repos pushed within this many minutes
+            language: Optional programming language filter
+            min_stars: Minimum number of stars
+            max_results: Maximum number of repositories to return
+            
+        Yields:
+            Repository objects with recent activity
+        """
+        since_date = datetime.now() - timedelta(minutes=since_minutes)
+        date_str = since_date.strftime('%Y-%m-%dT%H:%M:%S')
+        
+        # Build search query
+        query_parts = [f"pushed:>={date_str}"]
+        
+        if language:
+            query_parts.append(f"language:{language}")
+        
+        if min_stars > 0:
+            query_parts.append(f"stars:>={min_stars}")
+        
+        query = " ".join(query_parts)
+        
+        logger.info(f"Searching public repos with query: {query}")
+        
+        try:
+            repos = self.github.search_repositories(
+                query=query,
+                sort="updated",
+                order="desc"
+            )
+            
+            count = 0
+            for repo in repos:
+                if count >= max_results:
+                    break
+                    
+                # Skip repos we've already processed this session
+                if repo.full_name in self._processed_repos:
+                    continue
+                
+                self._processed_repos.add(repo.full_name)
+                yield repo
+                count += 1
+                
+                # Complying to Github API rate limits
+                if count % 10 == 0:
+                    self._check_rate_limit()
+                    
+        except RateLimitExceededException:
+            logger.warning("Rate limit exceeded during repo search")
+            self._wait_for_rate_limit()
+        except GithubException as e:
+            logger.error(f"Failed to search repositories: {e}")
     
