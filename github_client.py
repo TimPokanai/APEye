@@ -58,3 +58,37 @@ class GitHubClient:
         except GithubException as e:
             logger.error(f"Authentication failed: {e}")
             raise
+
+    def get_repositories(self, org_name: Optional[str] = None, 
+                         repo_names: Optional[List[str]] = None) -> Generator[Repository, None, None]:
+        """
+        Get repositories to monitor.
+        
+        Args:
+            org_name: Organization name to get all repos from (optional)
+            repo_names: List of specific repo names in 'owner/repo' format (optional)
+            
+        Yields:
+            Repository objects
+        """
+        if repo_names:
+            for repo_name in repo_names:
+                try:
+                    yield self.github.get_repo(repo_name)
+                except GithubException as e:
+                    logger.error(f"Failed to get repo {repo_name}: {e}")
+                    
+        elif org_name:
+            try:
+                org = self.github.get_organization(org_name)
+                for repo in org.get_repos():
+                    yield repo
+            except GithubException as e:
+                logger.error(f"Failed to get org repos for {org_name}: {e}")
+        else:
+            # Get authenticated user's repos
+            user = self.github.get_user()
+            for repo in user.get_repos():
+                yield repo
+    
+    
