@@ -16,8 +16,223 @@ class SecretMatch:
     file_path: str
     severity: str  # 'high', 'medium', 'low'
 
+# Secret patterns with their descriptions and severity levels
 SECRET_PATTERNS = [
-
+    # AWS
+    {
+        "name": "AWS Access Key ID",
+        "pattern": r"(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}",
+        "severity": "high"
+    },
+    {
+        "name": "AWS Secret Access Key",
+        "pattern": r"(?i)aws[_\-\.]?secret[_\-\.]?(?:access[_\-\.]?)?key[\s]*[=:]\s*['\"]?([A-Za-z0-9/+=]{40})['\"]?",
+        "severity": "high"
+    },
+    
+    # GitHub
+    {
+        "name": "GitHub Personal Access Token",
+        "pattern": r"ghp_[A-Za-z0-9]{36}",
+        "severity": "high"
+    },
+    {
+        "name": "GitHub OAuth Access Token",
+        "pattern": r"gho_[A-Za-z0-9]{36}",
+        "severity": "high"
+    },
+    {
+        "name": "GitHub App Token",
+        "pattern": r"(?:ghu|ghs)_[A-Za-z0-9]{36}",
+        "severity": "high"
+    },
+    {
+        "name": "GitHub Refresh Token",
+        "pattern": r"ghr_[A-Za-z0-9]{36}",
+        "severity": "high"
+    },
+    
+    # Google
+    {
+        "name": "Google API Key",
+        "pattern": r"AIza[0-9A-Za-z\-_]{35}",
+        "severity": "high"
+    },
+    {
+        "name": "Google OAuth Client Secret",
+        "pattern": r"(?i)client[_\-]?secret[\s]*[=:]\s*['\"]?([A-Za-z0-9_\-]{24})['\"]?",
+        "severity": "medium"
+    },
+    
+    # Stripe
+    {
+        "name": "Stripe Live Secret Key",
+        "pattern": r"sk_live_[A-Za-z0-9]{24,}",
+        "severity": "high"
+    },
+    {
+        "name": "Stripe Test Secret Key",
+        "pattern": r"sk_test_[A-Za-z0-9]{24,}",
+        "severity": "medium"
+    },
+    {
+        "name": "Stripe Restricted Key",
+        "pattern": r"rk_live_[A-Za-z0-9]{24,}",
+        "severity": "high"
+    },
+    
+    # Slack
+    {
+        "name": "Slack Bot Token",
+        "pattern": r"xoxb-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24}",
+        "severity": "high"
+    },
+    {
+        "name": "Slack User Token",
+        "pattern": r"xoxp-[0-9]{10,13}-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{32}",
+        "severity": "high"
+    },
+    {
+        "name": "Slack Webhook URL",
+        "pattern": r"https://hooks\.slack\.com/services/T[A-Z0-9]{8,}/B[A-Z0-9]{8,}/[A-Za-z0-9]{24}",
+        "severity": "high"
+    },
+    
+    # Discord
+    {
+        "name": "Discord Bot Token",
+        "pattern": r"(?:N|M|O)[A-Za-z0-9]{23,}\.[\w-]{6}\.[\w-]{27}",
+        "severity": "high"
+    },
+    {
+        "name": "Discord Webhook URL",
+        "pattern": r"https://discord(?:app)?\.com/api/webhooks/[0-9]+/[A-Za-z0-9_\-]+",
+        "severity": "medium"
+    },
+    
+    # Twilio
+    {
+        "name": "Twilio Account SID",
+        "pattern": r"AC[a-f0-9]{32}",
+        "severity": "medium"
+    },
+    {
+        "name": "Twilio Auth Token",
+        "pattern": r"(?i)twilio[_\-\.]?auth[_\-\.]?token[\s]*[=:]\s*['\"]?([a-f0-9]{32})['\"]?",
+        "severity": "high"
+    },
+    
+    # SendGrid
+    {
+        "name": "SendGrid API Key",
+        "pattern": r"SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}",
+        "severity": "high"
+    },
+    
+    # Mailchimp
+    {
+        "name": "Mailchimp API Key",
+        "pattern": r"[a-f0-9]{32}-us[0-9]{1,2}",
+        "severity": "high"
+    },
+    
+    # Heroku
+    {
+        "name": "Heroku API Key",
+        "pattern": r"(?i)heroku[_\-\.]?api[_\-\.]?key[\s]*[=:]\s*['\"]?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})['\"]?",
+        "severity": "high"
+    },
+    
+    # NPM
+    {
+        "name": "NPM Access Token",
+        "pattern": r"npm_[A-Za-z0-9]{36}",
+        "severity": "high"
+    },
+    
+    # PyPI
+    {
+        "name": "PyPI API Token",
+        "pattern": r"pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_\-]{50,}",
+        "severity": "high"
+    },
+    
+    # Database Connection Strings
+    {
+        "name": "PostgreSQL Connection String",
+        "pattern": r"postgres(?:ql)?://[^:]+:[^@]+@[^/]+/[^\s]+",
+        "severity": "high"
+    },
+    {
+        "name": "MongoDB Connection String",
+        "pattern": r"mongodb(?:\+srv)?://[^:]+:[^@]+@[^\s]+",
+        "severity": "high"
+    },
+    {
+        "name": "MySQL Connection String",
+        "pattern": r"mysql://[^:]+:[^@]+@[^/]+/[^\s]+",
+        "severity": "high"
+    },
+    {
+        "name": "Redis Connection String",
+        "pattern": r"redis://[^:]+:[^@]+@[^\s]+",
+        "severity": "high"
+    },
+    
+    # Generic Patterns
+    {
+        "name": "Private Key",
+        "pattern": r"-----BEGIN (?:RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY(?:\sBLOCK)?-----",
+        "severity": "high"
+    },
+    {
+        "name": "Generic API Key Assignment",
+        "pattern": r"(?i)(?:api[_\-\.]?key|apikey|secret[_\-\.]?key|auth[_\-\.]?token|access[_\-\.]?token)[\s]*[=:]\s*['\"]([A-Za-z0-9_\-]{20,})['\"]",
+        "severity": "medium"
+    },
+    {
+        "name": "Generic Password Assignment",
+        "pattern": r"(?i)(?:password|passwd|pwd)[\s]*[=:]\s*['\"]([^'\"]{8,})['\"]",
+        "severity": "medium"
+    },
+    {
+        "name": "JWT Token",
+        "pattern": r"eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*",
+        "severity": "medium"
+    },
+    
+    # Azure
+    {
+        "name": "Azure Storage Account Key",
+        "pattern": r"(?i)(?:account[_\-\.]?key|storage[_\-\.]?key)[\s]*[=:]\s*['\"]?([A-Za-z0-9+/]{86}==)['\"]?",
+        "severity": "high"
+    },
+    {
+        "name": "Azure Connection String",
+        "pattern": r"DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/]+=*;",
+        "severity": "high"
+    },
+    
+    # Firebase
+    {
+        "name": "Firebase Database URL",
+        "pattern": r"https://[a-z0-9-]+\.firebaseio\.com",
+        "severity": "medium"
+    },
+    
+    # OpenAI
+    {
+        "name": "OpenAI API Key",
+        "pattern": r"sk-[A-Za-z0-9]{48}",
+        "severity": "high"
+    },
+    
+    # Anthropic
+    {
+        "name": "Anthropic API Key",
+        "pattern": r"sk-ant-[A-Za-z0-9_\-]{93}",
+        "severity": "high"
+    },
 ]
 
 class SecretScanner:
