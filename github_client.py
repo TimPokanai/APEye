@@ -14,6 +14,9 @@ from github import Github, GithubException, RateLimitExceededException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
+from secret_patterns import SecretScanner, SecretMatch, format_findings_report
+from metrics import get_metrics, MetricsStorage
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -42,4 +45,16 @@ class GitHubClient:
             access_token: GitHub Personal Access Token with repo permissions
             metrics_path: Path to metrics storage file
         """
-        self.github = GitHub(access_token, per_page=100)
+        self.github = Github(access_token, per_page=100)
+        self.scanner = SecretScanner()
+        self.metrics = get_metrics(metrics_path)
+        self._processed_prs: Set[str] = set()  # Track processed PRs to avoid duplicates
+        self._processed_repos: Set[str] = set()  # Track repos checked in current session
+
+        # Verify authentication of access token
+        try:
+            user = self.github.get_user()
+            logger.info(f"Authenticated as: {user.login}")
+        except GithubException as e:
+            logger.error(f"Authentication failed: {e}")
+            raise

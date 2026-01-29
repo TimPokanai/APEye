@@ -238,3 +238,111 @@ class MetricsStorage:
             }
             for name, stats in sorted_repos if stats["total_secrets_found"] > 0
         ]
+
+    def get_global_metrics(self) -> Dict[str, Any]:
+        """Get current global metrics."""
+        with self._lock:
+            return self._data["global_metrics"].copy()
+    
+    def get_repo_stats(self, repo_full_name: str) -> Optional[Dict[str, Any]]:
+        """Get statistics for a specific repository."""
+        with self._lock:
+            return self._data["repository_stats"].get(repo_full_name, {}).copy()
+    
+    def get_all_repo_stats(self) -> Dict[str, Any]:
+        """Get statistics for all repositories."""
+        with self._lock:
+            return self._data["repository_stats"].copy()
+    
+    def get_recent_scans(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent scan history."""
+        with self._lock:
+            return self._data["scan_history"][-limit:]
+    
+    def get_summary_report(self) -> str:
+        """Generate a human-readable summary report."""
+        with self._lock:
+            metrics = self._data["global_metrics"]
+            
+            lines = [
+                "=" * 60,
+                "🔐 SECRET SCANNER METRICS REPORT",
+                "=" * 60,
+                "",
+                "📊 GLOBAL STATISTICS",
+                "-" * 40,
+                f"  Total Repositories Scanned: {metrics.get('total_repositories_scanned', 0):,}",
+                f"  Total PRs Scanned:          {metrics.get('total_prs_scanned', 0):,}",
+                f"  Total Secrets Found:        {metrics.get('total_secrets_found', 0):,}",
+                f"  Total Comments Posted:      {metrics.get('total_comments_posted', 0):,}",
+                "",
+                "⚠️  SEVERITY BREAKDOWN",
+                "-" * 40,
+                f"  🔴 High:   {metrics.get('total_high_severity', 0):,}",
+                f"  🟠 Medium: {metrics.get('total_medium_severity', 0):,}",
+                f"  🟡 Low:    {metrics.get('total_low_severity', 0):,}",
+                "",
+            ]
+            
+            # Top secret types
+            secret_types = metrics.get("secret_types_breakdown", {})
+            if secret_types:
+                sorted_types = sorted(secret_types.items(), key=lambda x: x[1], reverse=True)[:10]
+                lines.extend([
+                    "🔑 TOP SECRET TYPES FOUND",
+                    "-" * 40,
+                ])
+                for secret_type, count in sorted_types:
+                    lines.append(f"  {secret_type}: {count:,}")
+                lines.append("")
+            
+            # Top vulnerable repos
+            top_repos = metrics.get("top_vulnerable_repos", [])
+            if top_repos:
+                lines.extend([
+                    "🏆 TOP VULNERABLE REPOSITORIES",
+                    "-" * 40,
+                ])
+                for i, repo in enumerate(top_repos[:10], 1):
+                    lines.append(f"  {i}. {repo['repo']}: {repo['secrets_found']} secrets")
+                lines.append("")
+            
+            lines.extend([
+                "-" * 40,
+                f"Scanner started: {metrics.get('started_at', 'N/A')}",
+                f"Last updated:    {metrics.get('last_updated', 'N/A')}",
+                "=" * 60,
+            ])
+            
+            return "\n".join(lines)
+    
+    def export_metrics(self, filepath: str):
+        """Export all metrics to a JSON file."""
+        with self._lock:
+            with open(filepath, 'w') as f:
+                json.dump(self._data, f, indent=2, default=str)
+    
+    def reset_metrics(self):
+        """Reset all metrics (use with caution!)."""
+        with self._lock:
+            self._initialize_empty()
+
+
+# Global metrics instance
+_metrics_instance: Optional[MetricsStorage] = None
+
+
+def get_metrics(storage_path: str = "scanner_metrics.json") -> MetricsStorage:
+    """
+    Get the global metrics storage instance.
+    
+    Args:
+        storage_path: Path to storage file (only used on first call)
+        
+    Returns:
+        MetricsStorage instance
+    """
+    global _metrics_instance
+    if _metrics_instance is None:
+        _metrics_instance = MetricsStorage(storage_path)
+    return _metrics_instance
